@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, Integer, String, Date
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -23,13 +23,13 @@ class TodoListApp:
 
     def run(self):
         while True:
-            menu = ["1) Today's tasks", "2) Add a task", "0) Exit"]
+            menu = ["1) Today's tasks", "2) Week's tasks", "3) All tasks", "4) Add a task", "0) Exit"]
             for option in menu:
                 print(option)
 
             user_input = input()
 
-            if user_input not in ["0", "1", "2"]:
+            if user_input not in ["0", "1", "2", "3", "4"]:
                 print("Invalid input. Please try again.")
                 continue
             elif user_input == "0":
@@ -38,19 +38,44 @@ class TodoListApp:
             elif user_input == "1":
                 self.get_todays_tasks()
             elif user_input == "2":
+                self.get_weeks_tasks()
+            elif user_input == "3":
+                self.get_all_tasks()
+            elif user_input == "4":
                 self.add_task()
 
     def get_todays_tasks(self):
-        rows = self.session.query(Task).all()
+        deadline_date = datetime.today().date()
+        print(deadline_date.strftime("Today %d %b"))
+        self.get_tasks_for_date(deadline_date)
+
+    def get_weeks_tasks(self):
+        for i in range(7):
+            deadline_date = datetime.today().date() + timedelta(days=i)
+            print(deadline_date.strftime("%A %d %b"))
+            self.get_tasks_for_date(deadline_date)
+
+    def get_tasks_for_date(self, deadline_date):
+        rows = self.session.query(Task).filter(Task.deadline == deadline_date).all()
         if not rows:
             print("Nothing to do!")
         else:
-            for row in rows:
-                print(row)
+            for i, row in enumerate(rows, start=1):
+                print(f"{i}. {row.task}")
+
+    def get_all_tasks(self):
+        print("All tasks:")
+        rows = self.session.query(Task).order_by(Task.deadline).all()
+        if not rows:
+            print("Nothing to do!")
+        else:
+            for i, row in enumerate(rows, start=1):
+                print(f"{i}. {row.task}. {row.deadline.strftime('%d %b')}")
 
     def add_task(self):
         new_task = input("Enter a task\n")
-        self.session.add(Task(task=new_task))
+        new_deadline = datetime.strptime(input("Enter a deadline\n"), "%Y-%m-%d")
+        self.session.add(Task(task=new_task, deadline=new_deadline))
         self.session.commit()
         print("The task has been added!")
 
