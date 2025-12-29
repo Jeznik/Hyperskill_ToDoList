@@ -1,27 +1,62 @@
-# Write your code here
-class TodoListData():
-    def __init__(self):
-        self.todos = {}
+from datetime import datetime
+from sqlalchemy import create_engine, Column, Integer, String, Date
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-class TodListApp():
+Base = declarative_base()
+
+class Task(Base):
+    __tablename__ = 'task'
+    id = Column(Integer, primary_key=True)
+    task = Column(String)
+    deadline = Column(Date, default=datetime.today)
+
+    def __repr__(self):
+        return f"Task(id={self.id}, task='{self.task}', deadline={self.deadline})"
+
+
+class TodoListApp:
     def __init__(self):
-        self.todo_list_data = TodoListData()
+        engine = create_engine('sqlite:///todo.db?check_same_thread=False')
+        Base.metadata.create_all(engine)
+        Session = sessionmaker(bind=engine)
+        self.session = Session()
 
     def run(self):
-        self.todo_list_data.todos["Today"] = [
-            "Do yoga",
-            "Make a breakfast",
-            "Learn the basics of SQL",
-            "Learn about ORM"
-        ]
-        todo_day = "Today"
-        print(f"{todo_day}:")
-        todo_items = self.todo_list_data.todos[todo_day]
-        for i, item in enumerate(todo_items, start=1):
-            print(f"{i}) {item}")
+        while True:
+            menu = ["1) Today's tasks", "2) Add a task", "0) Exit"]
+            for option in menu:
+                print(option)
+
+            user_input = input()
+
+            if user_input not in ["0", "1", "2"]:
+                print("Invalid input. Please try again.")
+                continue
+            elif user_input == "0":
+                print("Bye!")
+                break
+            elif user_input == "1":
+                self.get_todays_tasks()
+            elif user_input == "2":
+                self.add_task()
+
+    def get_todays_tasks(self):
+        rows = self.session.query(Task).all()
+        if not rows:
+            print("Nothing to do!")
+        else:
+            for row in rows:
+                print(row)
+
+    def add_task(self):
+        new_task = input("Enter a task\n")
+        self.session.add(Task(task=new_task))
+        self.session.commit()
+        print("The task has been added!")
+
 
 def main():
-    app = TodListApp()
+    app = TodoListApp()
     app.run()
 
 if __name__ == "__main__":
