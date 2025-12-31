@@ -23,13 +23,14 @@ class TodoListApp:
 
     def run(self):
         while True:
-            menu = ["1) Today's tasks", "2) Week's tasks", "3) All tasks", "4) Add a task", "0) Exit"]
+            menu = ["1) Today's tasks", "2) Week's tasks", "3) All tasks", "4) Missed tasks",
+                    "5) Add a task ", "6) Delete a task ", "0) Exit"]
             for option in menu:
                 print(option)
 
             user_input = input()
 
-            if user_input not in ["0", "1", "2", "3", "4"]:
+            if user_input not in ["0", "1", "2", "3", "4", "5", "6"]:
                 print("Invalid input. Please try again.")
                 continue
             elif user_input == "0":
@@ -47,7 +48,13 @@ class TodoListApp:
                 self.get_all_tasks()
             elif user_input == "4":
                 print()
+                self.get_missed_tasks()
+            elif user_input == "5":
+                print()
                 self.add_task()
+            elif user_input == "6":
+                print()
+                self.delete_task()
 
     def get_todays_tasks(self):
         deadline_date = datetime.today().date()
@@ -80,12 +87,42 @@ class TodoListApp:
                 print(f"{i}. {row.task}. {row.deadline.strftime('%#d %b')}")
         print()
 
+    def get_missed_tasks(self):
+        print("Missed tasks:")
+        today = datetime.today().date()
+        rows = self.session.query(Task).filter(Task.deadline < today).all()
+        if not rows:
+            print("All tasks have been completed!")
+        else:
+            for i, row in enumerate(rows, start=1):
+                print(f"{i}. {row.task}. {row.deadline.strftime('%#d %b')}")
+        print()
+
     def add_task(self):
         new_task = input("Enter a task\n")
         new_deadline = datetime.strptime(input("Enter a deadline\n"), "%Y-%m-%d")
         self.session.add(Task(task=new_task, deadline=new_deadline))
         self.session.commit()
         print("The task has been added!")
+        print()
+
+    def delete_task(self):
+        print("Choose the number of the task you want to delete:")
+        rows = self.session.query(Task).order_by(Task.deadline).all()
+        valid_options = [str(i) for i, row in enumerate(rows, start=1)]
+        if not rows:
+            print("Nothing to delete")
+        else:
+            for i, row in enumerate(rows, start=1):
+                print(f"{i}. {row.task}. {row.deadline.strftime('%#d %b')}")
+        task_id = int(input())
+        if str(task_id) not in valid_options:
+            print("Invalid task ID")
+            return
+        task = self.session.query(Task).get(task_id)
+        self.session.delete(task)
+        self.session.commit()
+        print("The task has been deleted!")
         print()
 
 
