@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, Integer, String, Date
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm.exc import UnmappedInstanceError
 
 Base = declarative_base()
 
@@ -71,31 +72,26 @@ class TodoListApp:
 
     def get_tasks_for_date(self, deadline_date):
         rows = self.session.query(Task).filter(Task.deadline == deadline_date).all()
+        self.print_rows(rows, "Nothing to do!")
+
+    def print_rows(self, rows, not_rows_message):
         if not rows:
-            print("Nothing to do!")
+            print(not_rows_message)
         else:
-            for i, row in enumerate(rows, start=1):
-                print(f"{i}. {row.task}")
+            for row in rows:
+                print(f"{row.id}. {row.task}. {row.deadline.strftime('%#d %b')}")
 
     def get_all_tasks(self):
         print("All tasks:")
         rows = self.session.query(Task).order_by(Task.deadline).all()
-        if not rows:
-            print("Nothing to do!")
-        else:
-            for i, row in enumerate(rows, start=1):
-                print(f"{i}. {row.task}. {row.deadline.strftime('%#d %b')}")
+        self.print_rows(rows, "Nothing to do!")
         print()
 
     def get_missed_tasks(self):
         print("Missed tasks:")
         today = datetime.today().date()
         rows = self.session.query(Task).filter(Task.deadline < today).all()
-        if not rows:
-            print("All tasks have been completed!")
-        else:
-            for i, row in enumerate(rows, start=1):
-                print(f"{i}. {row.task}. {row.deadline.strftime('%#d %b')}")
+        self.print_rows(rows, "All tasks have been completed!")
         print()
 
     def add_task(self):
@@ -109,20 +105,15 @@ class TodoListApp:
     def delete_task(self):
         print("Choose the number of the task you want to delete:")
         rows = self.session.query(Task).order_by(Task.deadline).all()
-        valid_options = [str(i) for i, row in enumerate(rows, start=1)]
-        if not rows:
-            print("Nothing to delete")
-        else:
-            for i, row in enumerate(rows, start=1):
-                print(f"{i}. {row.task}. {row.deadline.strftime('%#d %b')}")
+        self.print_rows(rows, "Nothing to delete")
         task_id = int(input())
-        if str(task_id) not in valid_options:
-            print("Invalid task ID")
-            return
-        task = self.session.query(Task).get(task_id)
-        self.session.delete(task)
-        self.session.commit()
-        print("The task has been deleted!")
+        task = self.session.get(Task, task_id)
+        try:
+            self.session.delete(task)
+            self.session.commit()
+            print("The task has been deleted!")
+        except UnmappedInstanceError:
+            print("Invalid task ID. Task not found.")
         print()
 
 
