@@ -33,27 +33,34 @@ class TodoListApp:
                 print("Invalid input. Please try again.")
                 continue
             elif user_input == "0":
+                print()
                 print("Bye!")
                 break
             elif user_input == "1":
+                print()
                 self.get_todays_tasks()
             elif user_input == "2":
+                print()
                 self.get_weeks_tasks()
             elif user_input == "3":
+                print()
                 self.get_all_tasks()
             elif user_input == "4":
+                print()
                 self.add_task()
 
     def get_todays_tasks(self):
         deadline_date = datetime.today().date()
-        print(deadline_date.strftime("Today %d %b"))
+        print(deadline_date.strftime("Today %#d %b"))
         self.get_tasks_for_date(deadline_date)
+        print()
 
     def get_weeks_tasks(self):
         for i in range(7):
             deadline_date = datetime.today().date() + timedelta(days=i)
-            print(deadline_date.strftime("%A %d %b"))
+            print(deadline_date.strftime("%A %#d %b"))
             self.get_tasks_for_date(deadline_date)
+            print()
 
     def get_tasks_for_date(self, deadline_date):
         rows = self.session.query(Task).filter(Task.deadline == deadline_date).all()
@@ -70,7 +77,8 @@ class TodoListApp:
             print("Nothing to do!")
         else:
             for i, row in enumerate(rows, start=1):
-                print(f"{i}. {row.task}. {row.deadline.strftime('%d %b')}")
+                print(f"{i}. {row.task}. {row.deadline.strftime('%#d %b')}")
+        print()
 
     def add_task(self):
         new_task = input("Enter a task\n")
@@ -78,6 +86,7 @@ class TodoListApp:
         self.session.add(Task(task=new_task, deadline=new_deadline))
         self.session.commit()
         print("The task has been added!")
+        print()
 
 
 def main():
